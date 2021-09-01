@@ -1,5 +1,5 @@
 [package]
-name = "string-buffer"
+name = "text-canvas"
 version = "0.1.0"
 edition = "2018"
 
