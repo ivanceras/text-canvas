@@ -9,6 +9,38 @@ fn line_length() {
 }
 
 #[test]
+fn delete_last_char() {
+    let raw = "Hello world";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.delete_char(10, 0);
+    assert_eq!(canvas.to_string(), "Hello worl");
+}
+
+#[test]
+fn delete_first_char() {
+    let raw = "Hello world";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.delete_char(0, 0);
+    assert_eq!(canvas.to_string(), "ello world");
+}
+
+#[test]
+fn delete_5th_char() {
+    let raw = "Hello world";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.delete_char(5, 0);
+    assert_eq!(canvas.to_string(), "Helloworld");
+}
+
+#[test]
+fn delete_in_2nd_line() {
+    let raw = "Hello\nworld\nthere";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.delete_char(0, 2);
+    assert_eq!(canvas.to_string(), "Hello\nworld\nhere");
+}
+
+#[test]
 fn break_line() {
     let raw = "Hello world";
     let mut canvas = TextCanvas::from(raw);

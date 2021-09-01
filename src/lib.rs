@@ -94,6 +94,16 @@ impl TextCanvas {
         self.add_char(true, x, y, ch);
     }
 
+    /// delete character at this position
+    pub fn delete_char(&mut self, x: usize, y: usize) {
+        if let Some(line) = self.lines.get_mut(y) {
+            let col = Self::calc_col_insert_position(line, x);
+            if line.cells.get(col).is_some() {
+                line.cells.remove(col);
+            }
+        }
+    }
+
     /// Add a character at x and y location, character widths are taken into account
     /// So if a 2 wide character `文` is in line 0, the coordinate (0,0) and (0,1)
     /// access the same character. If you need to insert a character next to this character
