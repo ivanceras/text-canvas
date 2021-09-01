@@ -17,10 +17,17 @@ pub struct Line {
 
 impl Line {
     fn push_char(&mut self, ch: char) {
-        self.cells.push(Cell {
-            ch,
-            width: ch.width().expect("must have a unicode width"),
-        });
+        let width = ch.width().expect("must have a unicode size");
+        self.cells.push(Cell { ch, width });
+
+        self.width += width;
+    }
+}
+
+impl From<Vec<Cell>> for Line {
+    fn from(cells: Vec<Cell>) -> Self {
+        let width = cells.iter().map(|cell| cell.width).sum();
+        Self { cells, width }
     }
 }
 
@@ -64,12 +71,18 @@ impl TextCanvas {
         for _i in 0..n {
             println!("adding to line {}: {:?}", y, ch);
             self.lines[y].push_char(ch);
-            self.lines[y].width += ch.width().expect("must have a unicode size");
         }
     }
 
     /// break at line y and put the characters after x on the next line
-    fn insert_line(&mut self, x: usize, y: usize) {}
+    pub fn break_line(&mut self, x: usize, y: usize) {
+        if let Some(line) = self.lines.get_mut(y) {
+            let col = Self::calc_col_insert_position(line, x);
+            let new_line_cells: Vec<Cell> = line.cells.drain(col..).collect();
+            let new_line = Line::from(new_line_cells);
+            self.lines.insert(y + 1, new_line);
+        }
+    }
 
     /// insert a character at this x and y and move cells after it to the right
     pub fn insert_char(&mut self, x: usize, y: usize, ch: char) {
