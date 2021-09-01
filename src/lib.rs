@@ -58,9 +58,11 @@ impl StringBuffer {
     }
 
     fn add_col(&mut self, y: usize, n: usize) {
+        let ch = ' ';
         for _i in 0..n {
-            self.lines[y].push_char(' ');
+            self.lines[y].push_char(ch);
         }
+        self.lines[y].width += ch.width().expect("must have a unicode size");
     }
 
     /// break at line y and put the characters after x on the next line
@@ -104,13 +106,13 @@ impl StringBuffer {
             0
         };
         if line_gap > 0 {
-            self.add_lines(line_gap + 1);
+            self.add_lines(line_gap);
         }
         let line = &self.lines[y];
         let col_diff = if x > line.width { x - line.width } else { 0 };
         dbg!(&col_diff);
         if col_diff > 0 {
-            self.add_col(y, col_diff + 1);
+            self.add_col(y, col_diff);
         }
 
         let ch_width = ch.width().expect("must have a unicode width");
@@ -118,6 +120,9 @@ impl StringBuffer {
             ch,
             width: ch_width,
         };
+        dbg!(&x);
+        dbg!(&self.lines);
+        dbg!(&self.lines[y].width);
         assert!(x <= self.lines[y].width);
 
         let char_index = Self::calc_col_insert_position(&self.lines[y], x);
@@ -202,6 +207,30 @@ mod tests {
         let buffer = StringBuffer::from(raw);
         assert_eq!(buffer.total_lines(), 1);
         assert_eq!(buffer.line_width(0), Some(14));
+    }
+
+    #[test]
+    fn insert_end_cjk() {
+        let raw = "Hello 文件系统";
+        let mut buffer = StringBuffer::from(raw);
+        buffer.insert_char(13, 0, 'Y');
+        assert_eq!(buffer.to_string(), "Hello 文件系统Y");
+    }
+
+    #[test]
+    fn insert_end_cjk_same_insert_on_13th_or_14th() {
+        let raw = "Hello 文件系统";
+        let mut buffer = StringBuffer::from(raw);
+        buffer.insert_char(14, 0, 'Y');
+        assert_eq!(buffer.to_string(), "Hello 文件系统Y");
+    }
+
+    #[test]
+    fn insert_end_cjk_but_not_15th() {
+        let raw = "Hello 文件系统";
+        let mut buffer = StringBuffer::from(raw);
+        buffer.insert_char(15, 0, 'Y');
+        assert_eq!(buffer.to_string(), "Hello 文件系统 Y");
     }
 
     #[test]
