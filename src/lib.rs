@@ -54,15 +54,18 @@ impl StringBuffer {
     }
 
     fn add_lines(&mut self, n: usize) {
-        self.lines.push(Line::default());
+        for _i in 0..n {
+            self.lines.push(Line::default());
+        }
     }
 
     fn add_col(&mut self, y: usize, n: usize) {
         let ch = ' ';
         for _i in 0..n {
+            println!("adding to line {}: {:?}", y, ch);
             self.lines[y].push_char(ch);
+            self.lines[y].width += ch.width().expect("must have a unicode size");
         }
-        self.lines[y].width += ch.width().expect("must have a unicode size");
     }
 
     /// break at line y and put the characters after x on the next line
@@ -105,9 +108,14 @@ impl StringBuffer {
         } else {
             0
         };
+        dbg!(&line_gap);
+        if self.total_lines() == 0 {
+            self.add_lines(1);
+        }
         if line_gap > 0 {
             self.add_lines(line_gap);
         }
+        dbg!(&self.lines);
         let line = &self.lines[y];
         let col_diff = if x > line.width { x - line.width } else { 0 };
         dbg!(&col_diff);
@@ -189,6 +197,20 @@ mod tests {
         let buffer = StringBuffer::from(raw);
         assert_eq!(buffer.total_lines(), 1);
         assert_eq!(buffer.line_width(0), Some(11));
+    }
+
+    #[test]
+    fn insert_anywhere_col() {
+        let mut buffer = StringBuffer::default();
+        buffer.insert_char(5, 0, 'Y');
+        assert_eq!(buffer.to_string(), "     Y");
+    }
+
+    #[test]
+    fn insert_anywhere_line() {
+        let mut buffer = StringBuffer::default();
+        buffer.insert_char(0, 5, 'Y');
+        assert_eq!(buffer.to_string(), "\n\n\n\n\nY");
     }
 
     #[test]
