@@ -17,6 +17,34 @@ fn break_line() {
 }
 
 #[test]
+fn insert_5_lines() {
+    let raw = "Hello world";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.break_line(5, 0);
+    canvas.break_line(0, 1);
+    canvas.break_line(0, 1);
+    canvas.break_line(0, 1);
+    canvas.break_line(0, 1);
+    assert_eq!(canvas.to_string(), "Hello\n\n\n\n\n world");
+}
+
+#[test]
+fn insert_new_line_at_start() {
+    let raw = "Hello world";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.break_line(0, 0);
+    assert_eq!(canvas.to_string(), "\nHello world");
+}
+
+#[test]
+fn insert_new_line_at_end() {
+    let raw = "Hello world";
+    let mut canvas = TextCanvas::from(raw);
+    canvas.break_line(11, 0);
+    assert_eq!(canvas.to_string(), "Hello world\n");
+}
+
+#[test]
 fn insert_anywhere_col() {
     let mut canvas = TextCanvas::default();
     canvas.insert_char(5, 0, 'Y');
