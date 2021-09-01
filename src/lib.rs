@@ -2,16 +2,21 @@ use std::iter::FromIterator;
 use unicode_width::UnicodeWidthChar;
 
 #[derive(Debug)]
-pub struct Cell {
-    ch: char,
-    /// width of this character
-    width: usize,
+pub struct TextCanvas {
+    lines: Vec<Line>,
 }
 
 #[derive(Debug)]
 pub struct Line {
     cells: Vec<Cell>,
     /// total width of this line
+    width: usize,
+}
+
+#[derive(Debug)]
+pub struct Cell {
+    ch: char,
+    /// width of this character
     width: usize,
 }
 
@@ -40,10 +45,6 @@ impl Default for Line {
     }
 }
 
-pub struct TextCanvas {
-    lines: Vec<Line>,
-}
-
 impl Default for TextCanvas {
     fn default() -> Self {
         Self { lines: vec![] }
@@ -51,21 +52,24 @@ impl Default for TextCanvas {
 }
 
 impl TextCanvas {
-    /// the total number of lines in this string buffer
+    /// the total number of lines of this text canvas
     pub fn total_lines(&self) -> usize {
         self.lines.len()
     }
 
+    /// the width of the line at line `n`
     pub fn line_width(&self, n: usize) -> Option<usize> {
         self.lines.get(n).map(|l| l.width)
     }
 
+    /// add more lines, used internally
     fn add_lines(&mut self, n: usize) {
         for _i in 0..n {
             self.lines.push(Line::default());
         }
     }
 
+    /// fill columns at line y putting a space in each of the cells
     fn add_col(&mut self, y: usize, n: usize) {
         let ch = ' ';
         for _i in 0..n {
@@ -164,6 +168,7 @@ impl TextCanvas {
         }
     }
 
+    /// calcultate which column position for this x relative to the widths
     fn calc_col_insert_position(line: &Line, x: usize) -> usize {
         let mut col_width = 0;
         for (i, cell) in line.cells.iter().enumerate() {
