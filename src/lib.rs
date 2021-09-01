@@ -1,21 +1,23 @@
 use std::iter::FromIterator;
 use unicode_width::UnicodeWidthChar;
 
+#[derive(Debug)]
 pub struct Cell {
     ch: char,
     /// width of this character
     width: usize,
 }
 
+#[derive(Debug)]
 pub struct Line {
-    chars: Vec<Cell>,
+    cells: Vec<Cell>,
     /// total width of this line
     width: usize,
 }
 
 impl Line {
     fn push_char(&mut self, ch: char) {
-        self.chars.push(Cell {
+        self.cells.push(Cell {
             ch,
             width: ch.width().expect("must have a unicode width"),
         });
@@ -25,7 +27,7 @@ impl Line {
 impl Default for Line {
     fn default() -> Self {
         Self {
-            chars: vec![],
+            cells: vec![],
             width: 0,
         }
     }
@@ -61,16 +63,41 @@ impl StringBuffer {
         }
     }
 
-    /// insert a character at this x and y and move chars after it to the right
-    fn insert_char(&mut self, x: usize, y: usize, ch: char) {
+    /// break at line y and put the characters after x on the next line
+    fn insert_line(&mut self, x: usize, y: usize) {}
+
+    /// insert a character at this x and y and move cells after it to the right
+    pub fn insert_char(&mut self, x: usize, y: usize, ch: char) {
         self.add_char(false, x, y, ch);
     }
 
     /// replace the character at this location
-    fn replace_char(&mut self, x: usize, y: usize, ch: char) {
+    pub fn replace_char(&mut self, x: usize, y: usize, ch: char) {
         self.add_char(true, x, y, ch);
     }
+
+    /// TODO: take into account the widths of each cell
+    /// Add a character at x and y location, character widths are taken into account
+    /// So if a 2 wide character `文` is in line 0, the coordinate (0,0) and (0,1)
+    /// access the same character. If you need to insert a character next to this character
+    /// you need to insert at (2,0).
+    /// # Example`
+    /// ```rust
+    /// use string_buffer::StringBuffer;
+    ///
+    /// let mut buffer = StringBuffer::from("c文");
+    /// buffer.insert_char(2, 0, 'Y');
+    /// assert_eq!(buffer.to_string(), "c文Y");
+    /// ```
     fn add_char(&mut self, is_replace: bool, x: usize, y: usize, ch: char) {
+        assert!(
+            ch != '\n',
+            "line breaks should have been pre-processed before this point"
+        );
+        assert!(
+            ch != '\t',
+            "tabs should have been pre-processed before this point"
+        );
         let line_gap = if y > self.total_lines() {
             y - self.total_lines()
         } else {
@@ -81,6 +108,7 @@ impl StringBuffer {
         }
         let line = &self.lines[y];
         let col_diff = if x > line.width { x - line.width } else { 0 };
+        dbg!(&col_diff);
         if col_diff > 0 {
             self.add_col(y, col_diff + 1);
         }
@@ -90,12 +118,26 @@ impl StringBuffer {
             ch,
             width: ch_width,
         };
+        assert!(x <= self.lines[y].width);
+
+        let char_index = Self::calc_col_insert_position(&self.lines[y], x);
 
         if is_replace {
-            self.lines[y].chars[x] = cell
+            self.lines[y].cells[char_index] = cell
         } else {
-            self.lines[y].chars.insert(x, cell);
+            self.lines[y].cells.insert(char_index, cell);
         }
+    }
+
+    fn calc_col_insert_position(line: &Line, x: usize) -> usize {
+        let mut col_width = 0;
+        for (i, cell) in line.cells.iter().enumerate() {
+            if col_width >= x {
+                return i;
+            }
+            col_width += cell.width;
+        }
+        line.cells.len()
     }
 }
 
@@ -104,7 +146,7 @@ impl From<&str> for StringBuffer {
         let lines = s
             .lines()
             .map(|line| {
-                let chars: Vec<Cell> = line
+                let cells: Vec<Cell> = line
                     .chars()
                     .map(|ch| Cell {
                         width: ch.width().expect("must have a unicode width"),
@@ -113,8 +155,8 @@ impl From<&str> for StringBuffer {
                     .collect();
 
                 Line {
-                    width: chars.iter().map(|cell| cell.width).sum(),
-                    chars,
+                    width: cells.iter().map(|cell| cell.width).sum(),
+                    cells,
                 }
             })
             .collect();
@@ -126,7 +168,7 @@ impl ToString for StringBuffer {
     fn to_string(&self) -> String {
         self.lines
             .iter()
-            .map(|line| String::from_iter(line.chars.iter().map(|cell| cell.ch)))
+            .map(|line| String::from_iter(line.cells.iter().map(|cell| cell.ch)))
             .collect::<Vec<_>>()
             .join("\n")
     }
